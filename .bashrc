@@ -2,6 +2,8 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+export PATH="$PATH:~/local/bin:~/bin"
+
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
@@ -153,3 +155,6 @@ conns_prod_mongo () {
 conns_staging_mongo () {
     sudo netstat --inet -ap | egrep -o MONGOLAB_STAGING_PORT | uniq -c
 }
+
+# Local customizations.
+[[ -s ~/.bashrc_local ]] && source ~/.bashrc_local
