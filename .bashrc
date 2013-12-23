@@ -7,7 +7,7 @@
 
 # It's nice to know what node we're on.
 nodename () {
-    cat /etc/chef/client.rb | grep node_name | cut -f 2 -d ' ' | sed "s/\"//g"
+    cat /etc/chef/client.rb | egrep node_name | cut -f 2 -d ' ' | sed "s/\"//g"
 }
 CHEF_NODENAME=`nodename`
 
@@ -56,16 +56,16 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@$CHEF_NODENAME\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    PS1='${debian_chroot:+($debian_chroot)}\u@$CHEF_NODENAME:\w\$ '
 fi
 unset color_prompt force_color_prompt
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
 xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@$CHEF_NODENAME: \w\a\]$PS1"
     ;;
 *)
     ;;
@@ -108,29 +108,48 @@ if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
     . /etc/bash_completion
 fi
 
-# Useful functions.
-
-# Usage: greplog <logprefix> <pattern> > <outfile.log>
+# Useful sysadmin functions.
 #
-# TODO: Preserve datetime ordering in the final output.
+# usage: greplog <logprefix> <pattern>
 #
 greplog () {
     {
-        nice zcat $1.log.*.gz  # platform.log.XXXX.gz
-        nice cat $1.*[0-9]  # platform.log.1
-        nice cat $1.log  # platform.log (most recent)
-    } | nice grep "$2"
+        nice zcat $(ls -rt $1.log.*.gz)  # Matches <prefix>.log.XXXX.gz
+        nice cat $(ls -rt $1.*[0-9])  # Matches <prefix>.log.X
+        nice cat $1.log  # Matches <prefix>.log
+    } | nice egrep "$2"
 }
 
-# How many connections are open to various services?
+# IP addresses for our machine translation providers. These could change.
+#
+PROMT_IP="72\.55\.171\.23"
+SDL_IP="207\.38\.17\.15"
+
+# The ports MongoLab assigned our Fluencia databases. These could change.
+#
+MONGOLAB_PROD_PORT="55997"
+MONGOLAB_STAGING_PORT="39477"
+
 conns_mysql () {
-    netstat | egrep -o "mysql.*" | sort | uniq -c
+    netstat -a | egrep -o "mysql.*" | sort | uniq -c
 }
 
 conns_promt () {
-    netstat | egrep -o "72\.55\.171\.23" | sort | uniq -c
+    netstat -a | egrep -o $PROMT_IP | uniq -c
 }
 
 conns_sdl () {
-    netstat | egrep -o "207\.38\.17\.15" | sort | uniq -c
+    netstat -a | egrep -o $SDL_IP | uniq -c
+}
+
+conns_timewait () {
+    netstat --inet -a | egrep -o "TIME_WAIT" | uniq -c
+}
+
+conns_prod_mongo () {
+    sudo netstat --inet -ap | egrep -o MONGOLAB_PROD_PORT | uniq -c
+}
+
+conns_staging_mongo () {
+    sudo netstat --inet -ap | egrep -o MONGOLAB_STAGING_PORT | uniq -c
 }
