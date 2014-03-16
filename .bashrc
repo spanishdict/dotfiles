@@ -9,9 +9,12 @@ export PATH="$PATH:~/local/bin:~/bin"
 
 # It's nice to know what node we're on.
 nodename () {
-    cat /etc/chef/client.rb | egrep node_name | cut -f 2 -d ' ' | sed "s/\"//g"
+    if [ -r "$CHEF_CLIENT_FILE" ]; then
+        cat "$CHEF_CLIENT_FILE" | egrep node_name | cut -f 2 -d ' ' | sed "s/\"//g"
+    fi
 }
-CHEF_NODENAME=`nodename`
+CHEF_CLIENT_FILE=/etc/chef/client.rb
+CHEF_NODENAME=$(nodename)
 
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
